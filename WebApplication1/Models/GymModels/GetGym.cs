@@ -10,10 +10,10 @@ namespace WebApplication1.Models.GymModels
     public class SPGetGymModel
     {
         [Key]
-        public int GymId { get; set; }
+        public int Id { get; set; }
         [Required]
         [StringLength(50)]
-        public string GymName { get; set; }
+        public string Name { get; set; }
         public string Adress { get; set; }
         [StringLength(50)]
         public string Latitude { get; set; }

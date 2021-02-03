@@ -88,8 +88,6 @@ namespace WebApplication1.Controllers
                 var converter = new SerializerGenerator();
                 var output = new PersonalTrainers();
                 var result = converter.SerializeObject(ref input, ref output);
-                //string jsonString = JsonConvert.SerializeObject(personalTrainers);
-                //PersonalTrainers result = JsonConvert.DeserializeObject<PersonalTrainers>(jsonString);
                 _context.PersonalTrainers.Add(result);
                 await _context.SaveChangesAsync();
 

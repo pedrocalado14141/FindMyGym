@@ -28,6 +28,11 @@ namespace WebApplication1
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(options => options.AddPolicy("ApiCorsPolicy", builder =>
+            {
+                builder.WithOrigins("http://localhost:4200").AllowAnyMethod().AllowAnyHeader();
+
+            }));
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen();
 
@@ -64,6 +69,9 @@ namespace WebApplication1
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
+            app.UseCors("ApiCorsPolicy");
+
 
             app.UseAuthorization();
 

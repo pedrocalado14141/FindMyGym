@@ -13,7 +13,7 @@ namespace WebApplication1.Models
         {
             var dataset = new DataSet();
             var adapter = new SqlDataAdapter();
-            var command = new SqlCommand("EXECUTE dbo.SP_GetGym @id", conn2);
+            var command = new SqlCommand(SPCommand, conn2);
             command.Parameters.AddRange(parameters);
             adapter.SelectCommand = command;
             adapter.Fill(dataset);

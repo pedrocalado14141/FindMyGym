@@ -15,7 +15,7 @@ namespace WebApplication1.Models.Helper
             try
             {
                 string jsonString = JsonConvert.SerializeObject(Input);
-                output = (D)(object)JsonConvert.DeserializeObject<PersonalTrainers>(jsonString);
+                output = JsonConvert.DeserializeObject<D>(jsonString);
                 return output;
             }
             catch (Exception ex)

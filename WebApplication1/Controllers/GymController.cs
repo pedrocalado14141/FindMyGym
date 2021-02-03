@@ -46,22 +46,23 @@ namespace WebApplication1.Controllers
                 conn2.ConnectionString = Configuration.GetConnectionString("MasterContext");
                 var DataSet = SPConnection.ConsumeSP("EXECUTE dbo.SP_GetGym", new SqlParameter[] { }, conn2);
 
-                //1o metodo para converter de Json
+                //1o metodo para converter DataSet para/de Json
                 var Status = JsonConvert.SerializeObject(DataSet.Tables[0]);
                 var Validate = JsonConvert.DeserializeObject<List<Validate>>(Status);
-                ErrorCode.CheckStatus(Validate);
+                ErrorCode.CheckStatus(Validate); // Verificar os Erros que vem da BD na Tabela 0
 
-                //2o metodo para converter de Json
+                //2o metodo para converter DataSet para/de Json
                 var ResultSp = DataSet.Tables[1].AsEnumerable();
                 result = ResultSp.Select(p => new SPGetGymModel
                 {
-                    GymId = p.Field<int>("GymId"),
+                    Id = p.Field<int>("GymId"),
                     Latitude = p.Field<string>("Latitude"),
                     Longitude = p.Field<string>("Longitude"),
-                    GymName = p.Field<string>("GymName"),
+                    Name = p.Field<string>("GymName"),
                     Contact = p.Field<string>("Contact"),
                     Email = p.Field<string>("Email"),
                     Facebook = p.Field<string>("Facebook"),
+                    Adress = p.Field<string>("Adress")
                 }).ToList();
             }
             catch (Exception ex)
@@ -72,7 +73,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<SPGetGymModel>> GetGymId(int id)
+        public async Task<ActionResult<SPGetGymModel>> GetGymId([FromRoute] int id)
         {
             var resultId = await _context.Gym.FindAsync(id);
 
@@ -80,80 +81,79 @@ namespace WebApplication1.Controllers
             {
                 return NotFound("Ginásio Indicado não se encontra Disponivel na BD");
             }
-            var result = new SPGetGymModel()
-            {
-                GymId = resultId.Id,
-                Latitude = resultId.Latitude,
-                Longitude = resultId.Longitude,
-                GymName = resultId.Name,
-                Contact = resultId.Contact,
-                Email = resultId.Email,
-                Facebook = resultId.Facebook
-            };
 
-            
             //METODO PARA SP COM PARAMETROS E RETORNO DE ERRO POR SP 
 
-            //var ErrorCode = new ErrorHandler();
-            //var result = new SPGetGymModel();
-            //var SPConnection = new SPHandler();
-            //var conn2 = new SqlConnection();
-            //try
-            //{
-            //    SqlParameter[] parameters = {
-            //    new SqlParameter("@Id", id)
-            //        };
-            //    conn2.ConnectionString = Configuration.GetConnectionString("MasterContext");
-            //    var DataSet = SPConnection.ConsumeSP("EXECUTE dbo.SP_GetGymId @id", parameters, conn2);
+            var ErrorCode = new ErrorHandler();
+            var result = new SPGetGymModel();
+            var SPConnection = new DatasetGeneratorFromSP();
+            var conn2 = new SqlConnection();
+            try
+            {
+                SqlParameter[] parameters = {
+                new SqlParameter("@Id", id)
+                    };
+                conn2.ConnectionString = Configuration.GetConnectionString("MasterContext");
+                var DataSet = SPConnection.ConsumeSP("EXECUTE dbo.SP_GetGymId @id", parameters, conn2);
 
-            //    var Status = JsonConvert.SerializeObject(DataSet.Tables[0]);
-            //    var Validate = JsonConvert.DeserializeObject<List<Validate>>(Status);
-            //    ErrorCode.CheckStatus(Validate);
-            //    var ResultSp = DataSet.Tables[1].AsEnumerable();
+                var Status = JsonConvert.SerializeObject(DataSet.Tables[0]);
+                var Validate = JsonConvert.DeserializeObject<List<Validate>>(Status);
+                ErrorCode.CheckStatus(Validate);
+                var ResultSp = DataSet.Tables[1].AsEnumerable();
 
-            //    result = ResultSp.Select(p => new SPGetGymModel
-            //    {
-            //        GymId = p.Field<int>("GymId"),
-            //        Adress = p.Field<string>("Adress"),
-            //        Latitude = p.Field<string>("Latitude"),
-            //        Longitude = p.Field<string>("Longitude"),
-            //        GymName = p.Field<string>("GymName"),
-            //        Contact = p.Field<string>("Contact"),
-            //        Email = p.Field<string>("Email"),
-            //        Facebook = p.Field<string>("Facebook"),
-            //    }).FirstOrDefault();
+                result = ResultSp.Select(p => new SPGetGymModel
+                {
+                    Id = p.Field<int>("GymId"),
+                    Adress = p.Field<string>("Adress"),
+                    Latitude = p.Field<string>("Latitude"),
+                    Longitude = p.Field<string>("Longitude"),
+                    Name = p.Field<string>("GymName"),
+                    Contact = p.Field<string>("Contact"),
+                    Email = p.Field<string>("Email"),
+                    Facebook = p.Field<string>("Facebook"),
+                }).FirstOrDefault();
 
-            //}
-            //catch (Exception ex)
-            //{
-            //    return BadRequest(ex.Message);
-            //}
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
             return result;
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateGym(Gym input)
+        public async Task<IActionResult> UpdateGym([FromRoute] int id, [FromBody] UpdateGym input)
         {
-            var result = await _context.Gym.FindAsync(input.Id);
+            var result = await _context.Gym.FindAsync(id);
             if (result == null)
             {
                 return NotFound();
             }
             try
             {
-                _context.Update(input);
+                var Update = new Gym()
+                {
+                    Id = input.Id,
+                    Latitude = input.Latitude,
+                    Longitude = input.Longitude,
+                    Name = input.Name,
+                    Adress = input.Adress,
+                    Contact = input.Contact,
+                    Email = input.Email,
+                    Facebook = input.Facebook
+                };
+                _context.Update(Update);
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException) when (!GymIdExists(input.Id))
+            catch (DbUpdateConcurrencyException) when (!GymIdExists(id))
             {
                 return NotFound();
             }
-
             return Ok("Sucesso");
         }
 
         [HttpPost]
-        public async Task<ActionResult<AddGymOutput>> CreatetGym(AddGym input)
+        public async Task<ActionResult<AddGymOutput>> CreatetGym([FromBody] AddGym input)
         {
             var result = (from p in input.AddGymList
                           select new Gym()
@@ -183,7 +183,7 @@ namespace WebApplication1.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGym(long id)
+        public async Task<IActionResult> DeleteGym([FromRoute] int id)
         {
             var result = await _context.Gym.FindAsync(id);
 
@@ -191,14 +191,22 @@ namespace WebApplication1.Controllers
             {
                 return NotFound("Ginásio Indicado não se encontra Disponivel na BD");
             }
+            try
+            {
+                _context.Gym.Remove(result);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
 
-            _context.Gym.Remove(result);
-            await _context.SaveChangesAsync();
+                return NotFound(ex.InnerException);
+            }
+            
 
             return Ok("Sucesso");
         }
 
-        private bool GymIdExists(long id) =>
+        private bool GymIdExists(long id) => 
              _context.Gym.Any(e => e.Id == id);
     }
 }
